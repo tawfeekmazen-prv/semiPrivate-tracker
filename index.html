@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#0a0f1e"/>
+<title>Semi-Private Tracker</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{background:#0a0f1e;font-family:'Inter',system-ui,sans-serif;color:#e2e8f0;min-height:100vh;padding-bottom:60px;}
+  input,textarea,button{font-family:inherit;}
+  input:focus,textarea:focus{outline:none;}
+  button{cursor:pointer;}
+
+  /* Header */
+  #header{background:#0f172a;padding:14px 20px 0;position:sticky;top:0;z-index:100;border-bottom:2px solid var(--accent);}
+  .top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .brand{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:700;}
+  .title{font-size:20px;font-weight:800;color:#f8fafc;}
+  .right-badges{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+  .week-badge{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-15);border-radius:4px;padding:2px 7px;letter-spacing:.08em;}
+  .save-badge{font-size:9px;font-weight:700;letter-spacing:.08em;border-radius:4px;padding:2px 7px;transition:all .3s;display:none;}
+  .save-badge.saving{display:block;color:#64748b;background:#64748b15;}
+  .save-badge.saved{display:block;color:#4ade80;background:#4ade8015;}
+
+  /* Week row */
+  .week-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+  .week-label{font-size:10px;font-weight:700;color:#475569;letter-spacing:.1em;text-transform:uppercase;margin-right:4px;}
+  .week-btn{padding:4px 11px;border-radius:20px;border:1px solid #1e293b;background:transparent;color:#475569;font-size:12px;font-weight:700;transition:all .12s;}
+  .week-btn.active{border:none;background:var(--accent);color:#0a0f1e;}
+  .add-week-btn{padding:4px 10px;border-radius:20px;border:1px dashed var(--accent-44);background:transparent;color:var(--accent-77);font-size:12px;font-weight:700;}
+
+  /* Session tabs */
+  .tabs{display:flex;gap:4px;}
+  .tab-btn{padding:8px 20px;border-radius:8px 8px 0 0;border:none;font-size:13px;font-weight:700;letter-spacing:.08em;transition:all .15s;color:#64748b;background:#1e293b;}
+  .tab-btn.active{color:#0a0f1e;}
+
+  /* Body */
+  #body{padding:0 16px;}
+  .clients-row{display:flex;gap:12px;overflow-x:auto;padding-top:16px;padding-bottom:8px;align-items:flex-start;}
+  .clients-row::-webkit-scrollbar{height:4px;}
+  .clients-row::-webkit-scrollbar-thumb{background:#1e293b;border-radius:2px;}
+
+  /* Client card */
+  .client-card{background:#111827;border:1px solid #1e293b;border-radius:14px;min-width:280px;flex:0 0 280px;overflow:hidden;}
+  .client-header{border-bottom:1px solid var(--accent-33);padding:12px 14px;display:flex;align-items:center;gap:8px;background:var(--badge);}
+  .client-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+  .client-name-input{background:transparent;border:none;color:#f8fafc;font-size:15px;font-weight:700;flex:1;min-width:0;}
+  .remove-btn{background:none;border:none;color:#ef4444;font-size:18px;padding:0 2px;line-height:1;}
+
+  /* Exercise block */
+  .exercise-block{padding:10px 14px;border-bottom:1px solid #1e293b;}
+  .exercise-name-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .exercise-name-input{background:transparent;border:none;border-bottom:1px solid transparent;color:var(--accent);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;flex:1;min-width:0;padding:2px 0;transition:border-color .15s;}
+  .exercise-name-input:focus{border-bottom-color:var(--accent-66);}
+  .remove-ex-btn{background:none;border:none;color:#334155;font-size:14px;padding:0 2px;line-height:1;flex-shrink:0;}
+  .add-ex-btn{background:none;border:1px dashed var(--accent-33);border-radius:6px;color:var(--accent-99);font-size:11px;padding:5px 10px;margin:6px 14px 10px;width:calc(100% - 28px);text-align:left;}
+
+  /* Sets */
+  .sets-area{display:flex;flex-direction:column;gap:5px;}
+  .set-row{display:flex;gap:6px;align-items:center;}
+  .set-label{font-size:10px;color:#475569;width:20px;flex-shrink:0;font-weight:700;}
+  .set-input{background:#0f172a;border:1px solid #1e293b;border-radius:6px;color:#e2e8f0;font-size:12px;padding:4px 7px;width:100%;min-width:0;}
+  .set-note-input{background:#0f172a;border:1px solid #1e293b;border-radius:6px;color:#94a3b8;font-size:11px;padding:4px 7px;width:100%;font-style:italic;margin-top:3px;margin-left:26px;width:calc(100% - 26px);}
+  .x-sep{color:#334155;font-size:11px;}
+  .add-set-btn{background:none;border:1px dashed var(--accent-55);border-radius:6px;color:var(--accent);font-size:11px;padding:4px 10px;margin-top:4px;width:100%;}
+
+  /* Notes */
+  .notes-block{padding:10px 14px;}
+  .notes-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:#475569;text-transform:uppercase;margin-bottom:5px;}
+  .notes-input{background:#0f172a;border:1px solid #1e293b;border-radius:8px;color:#94a3b8;font-size:12px;padding:8px 10px;width:100%;resize:vertical;min-height:52px;}
+
+  /* Add client */
+  .add-client-btn{flex:0 0 auto;min-width:140px;height:48px;background:none;border:2px dashed var(--accent-44);border-radius:14px;color:var(--accent);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;align-self:flex-start;}
+  .add-client-plus{font-size:18px;}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="top-row">
+    <div>
+      <div class="brand">Semi-Private</div>
+      <div class="title">Session Tracker</div>
+    </div>
+    <div class="right-badges">
+      <div class="week-badge" id="wk-badge">WK 1</div>
+      <div class="save-badge" id="save-badge">✓ saved</div>
+    </div>
+  </div>
+  <div class="week-row" id="week-row"></div>
+  <div class="tabs" id="tabs"></div>
+</div>
+
+<div id="body">
+  <div class="clients-row" id="clients-row"></div>
+</div>
+
+<script>
+const SESSIONS = {
+  PULL: ["Pull-Up / Assisted Pull-Up","Chest-Supported DB Row","Single Arm KB Row","Incline Bench Rear Delt Raise","DB Shrug","Alternating DB Curl","Hammer Curl"],
+  PUSH: ["Incline DB Bench Press","Standing Single Arm KB Press","Push-Ups","DB Lateral Raise","DB Front Raise","Landmine Press","Overhead DB Triceps Extension","Close Grip Push-Up"],
+  LEGS: ["Barbell Hip Thrust","Goblet Squat","Bulgarian Split Squat","Romanian Deadlift","Swiss Ball Leg Curl","Walking Lunge","Calf Raise"],
+};
+const SESSION_COLORS = {
+  PULL: { accent:"#38bdf8", badge:"#082f49", a15:"#38bdf826", a33:"#38bdf854", a44:"#38bdf870", a55:"#38bdf88c", a66:"#38bdf8a8", a77:"#38bdf8c4", a99:"#38bdf8fc" },
+  PUSH: { accent:"#f472b6", badge:"#4a044e", a15:"#f472b626", a33:"#f472b654", a44:"#f472b670", a55:"#f472b68c", a66:"#f472b6a8", a77:"#f472b6c4", a99:"#f472b6fc" },
+  LEGS: { accent:"#4ade80", badge:"#052e16", a15:"#4ade8026", a33:"#4ade8054", a44:"#4ade8070", a55:"#4ade808c", a66:"#4ade80a8", a77:"#4ade80c4", a99:"#4ade80fc" },
+};
+const MAX_WEEKS = 8;
+const SK = "semiPrivateTracker_v2";
+
+// ── State ──
+let state = {
+  activeSession: "PUSH",
+  activeWeek: 1,
+  totalWeeks: 4,
+  clients: [
+    {id:"c1", name:"Ali",   customExercises:{}},
+    {id:"c2", name:"Morsy", customExercises:{}},
+    {id:"c3", name:"Shanan",customExercises:{}},
+  ],
+  weekSets:  {},  // [week][key] = {weight,reps,note}
+  weekNotes: {},  // [week][clientId] = string
+};
+
+// ── Persist ──
+let saveTimer = null;
+function schedSave() {
+  showSave("saving");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(SK, JSON.stringify(state)); showSave("saved"); }
+    catch(e) { showSave(null); }
+  }, 500);
+}
+function showSave(status) {
+  const el = document.getElementById("save-badge");
+  el.className = "save-badge" + (status ? " "+status : "");
+  el.textContent = status === "saving" ? "saving…" : "✓ saved";
+  if (status === "saved") setTimeout(()=>{ el.className="save-badge"; }, 1800);
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(SK);
+    if (raw) { const d = JSON.parse(raw); Object.assign(state, d); }
+  } catch(e) {}
+}
+
+// ── CSS vars ──
+function applyColors() {
+  const c = SESSION_COLORS[state.activeSession];
+  const r = document.documentElement.style;
+  r.setProperty("--accent",  c.accent);
+  r.setProperty("--badge",   c.badge);
+  r.setProperty("--accent-15", c.a15);
+  r.setProperty("--accent-33", c.a33);
+  r.setProperty("--accent-44", c.a44);
+  r.setProperty("--accent-55", c.a55);
+  r.setProperty("--accent-66", c.a66);
+  r.setProperty("--accent-77", c.a77);
+  r.setProperty("--accent-99", c.a99);
+  document.getElementById("header").style.borderBottomColor = c.accent;
+}
+
+// ── Helpers ──
+function uid() { return "c" + Date.now() + Math.floor(Math.random()*9999); }
+function getExercises(client) {
+  return client.customExercises?.[state.activeSession] ?? SESSIONS[state.activeSession];
+}
+function getSet(clientId, ex, idx) {
+  return state.weekSets?.[state.activeWeek]?.[`${clientId}__${ex}__${idx}`] || {weight:"",reps:"",note:""};
+}
+function setSet(clientId, ex, idx, field, val) {
+  const wk = state.activeWeek;
+  if (!state.weekSets[wk]) state.weekSets[wk] = {};
+  const key = `${clientId}__${ex}__${idx}`;
+  if (!state.weekSets[wk][key]) state.weekSets[wk][key] = {weight:"",reps:"",note:""};
+  state.weekSets[wk][key][field] = val;
+  schedSave();
+}
+function getSetCount(clientId, ex) {
+  const wd = state.weekSets[state.activeWeek] || {};
+  const prefix = `${clientId}__${ex}__`;
+  let max = 1;
+  for (const k in wd) { if (k.startsWith(prefix)) { const i = parseInt(k.split("__")[2]); if (!isNaN(i)) max = Math.max(max,i); } }
+  return Math.max(2, max+1);
+}
+function getNote(clientId) { return state.weekNotes?.[state.activeWeek]?.[clientId] || ""; }
+function setNote(clientId, val) {
+  if (!state.weekNotes[state.activeWeek]) state.weekNotes[state.activeWeek] = {};
+  state.weekNotes[state.activeWeek][clientId] = val;
+  schedSave();
+}
+
+// ── Render ──
+function render() {
+  applyColors();
+  renderWeekRow();
+  renderTabs();
+  renderClients();
+  document.getElementById("wk-badge").textContent = "WK " + state.activeWeek;
+}
+
+function renderWeekRow() {
+  const el = document.getElementById("week-row");
+  el.innerHTML = `<span class="week-label">Week</span>`;
+  for (let w = 1; w <= state.totalWeeks; w++) {
+    const btn = document.createElement("button");
+    btn.className = "week-btn" + (w === state.activeWeek ? " active" : "");
+    btn.textContent = w;
+    btn.onclick = () => { state.activeWeek = w; schedSave(); render(); };
+    el.appendChild(btn);
+  }
+  if (state.totalWeeks < MAX_WEEKS) {
+    const btn = document.createElement("button");
+    btn.className = "add-week-btn";
+    btn.textContent = "+ wk";
+    btn.onclick = () => { state.totalWeeks++; schedSave(); render(); };
+    el.appendChild(btn);
+  }
+}
+
+function renderTabs() {
+  const el = document.getElementById("tabs");
+  el.innerHTML = "";
+  for (const sess of Object.keys(SESSIONS)) {
+    const btn = document.createElement("button");
+    btn.className = "tab-btn" + (sess === state.activeSession ? " active" : "");
+    if (sess === state.activeSession) btn.style.background = SESSION_COLORS[sess].accent;
+    btn.textContent = sess;
+    btn.onclick = () => { state.activeSession = sess; schedSave(); render(); };
+    el.appendChild(btn);
+  }
+}
+
+function renderClients() {
+  const row = document.getElementById("clients-row");
+  row.innerHTML = "";
+
+  for (const client of state.clients) {
+    row.appendChild(buildClientCard(client));
+  }
+
+  // Add client btn
+  const btn = document.createElement("button");
+  btn.className = "add-client-btn";
+  btn.innerHTML = `<span class="add-client-plus">+</span> Add Client`;
+  btn.onclick = () => {
+    state.clients.push({id: uid(), name:"", customExercises:{}});
+    schedSave(); render();
+  };
+  row.appendChild(btn);
+}
+
+function buildClientCard(client) {
+  const card = document.createElement("div");
+  card.className = "client-card";
+
+  // Header
+  const hdr = document.createElement("div");
+  hdr.className = "client-header";
+  const dot = document.createElement("div"); dot.className = "client-dot";
+  const nameIn = document.createElement("input");
+  nameIn.className = "client-name-input";
+  nameIn.value = client.name;
+  nameIn.placeholder = "Client name...";
+  nameIn.oninput = (e) => { client.name = e.target.value; schedSave(); };
+  const remBtn = document.createElement("button");
+  remBtn.className = "remove-btn"; remBtn.textContent = "×";
+  remBtn.onclick = () => {
+    if (confirm(`Remove ${client.name || "this client"}?`)) {
+      state.clients = state.clients.filter(c => c.id !== client.id);
+      schedSave(); render();
+    }
+  };
+  hdr.appendChild(dot); hdr.appendChild(nameIn); hdr.appendChild(remBtn);
+  card.appendChild(hdr);
+
+  // Exercises
+  const exercises = getExercises(client);
+  for (let exIdx = 0; exIdx < exercises.length; exIdx++) {
+    card.appendChild(buildExBlock(client, exercises, exIdx));
+  }
+
+  // Add exercise btn
+  const addEx = document.createElement("button");
+  addEx.className = "add-ex-btn";
+  addEx.textContent = "+ add exercise";
+  addEx.onclick = () => {
+    if (!client.customExercises[state.activeSession])
+      client.customExercises[state.activeSession] = [...SESSIONS[state.activeSession]];
+    client.customExercises[state.activeSession].push("");
+    schedSave(); render();
+  };
+  card.appendChild(addEx);
+
+  // Notes
+  const nb = document.createElement("div"); nb.className = "notes-block";
+  const nl = document.createElement("div"); nl.className = "notes-label"; nl.textContent = "Session Notes";
+  const ta = document.createElement("textarea"); ta.className = "notes-input";
+  ta.value = getNote(client.id);
+  ta.placeholder = "Observations, cues, next session targets...";
+  ta.oninput = (e) => setNote(client.id, e.target.value);
+  nb.appendChild(nl); nb.appendChild(ta);
+  card.appendChild(nb);
+
+  return card;
+}
+
+function buildExBlock(client, exercises, exIdx) {
+  const ex = exercises[exIdx];
+  const block = document.createElement("div"); block.className = "exercise-block";
+
+  // Name row
+  const nameRow = document.createElement("div"); nameRow.className = "exercise-name-row";
+  const nameIn = document.createElement("input"); nameIn.className = "exercise-name-input";
+  nameIn.value = ex; nameIn.placeholder = "Exercise name...";
+  nameIn.oninput = (e) => {
+    if (!client.customExercises[state.activeSession])
+      client.customExercises[state.activeSession] = [...SESSIONS[state.activeSession]];
+    client.customExercises[state.activeSession][exIdx] = e.target.value;
+    schedSave();
+  };
+  const remEx = document.createElement("button"); remEx.className = "remove-ex-btn"; remEx.textContent = "×";
+  remEx.onclick = () => {
+    if (!client.customExercises[state.activeSession])
+      client.customExercises[state.activeSession] = [...SESSIONS[state.activeSession]];
+    client.customExercises[state.activeSession].splice(exIdx, 1);
+    schedSave(); render();
+  };
+  nameRow.appendChild(nameIn); nameRow.appendChild(remEx);
+  block.appendChild(nameRow);
+
+  // Sets
+  const setsArea = document.createElement("div"); setsArea.className = "sets-area";
+  const setCount = getSetCount(client.id, ex);
+
+  function renderSets() {
+    setsArea.innerHTML = "";
+    const count = getSetCount(client.id, ex);
+    for (let idx = 0; idx < count; idx++) {
+      const s = getSet(client.id, ex, idx);
+      const wrap = document.createElement("div");
+
+      const row = document.createElement("div"); row.className = "set-row";
+      const lbl = document.createElement("span"); lbl.className = "set-label"; lbl.textContent = "S"+(idx+1);
+
+      const wIn = document.createElement("input"); wIn.className = "set-input"; wIn.style.width="62px";
+      wIn.value = s.weight; wIn.placeholder = "kg/lb";
+      wIn.oninput = (e) => setSet(client.id, ex, idx, "weight", e.target.value);
+
+      const sep = document.createElement("span"); sep.className = "x-sep"; sep.textContent = "×";
+
+      const rIn = document.createElement("input"); rIn.className = "set-input"; rIn.style.width="46px";
+      rIn.value = s.reps; rIn.placeholder = "reps";
+      rIn.oninput = (e) => setSet(client.id, ex, idx, "reps", e.target.value);
+
+      row.appendChild(lbl); row.appendChild(wIn); row.appendChild(sep); row.appendChild(rIn);
+
+      const nIn = document.createElement("input"); nIn.className = "set-note-input";
+      nIn.value = s.note; nIn.placeholder = "note...";
+      nIn.oninput = (e) => setSet(client.id, ex, idx, "note", e.target.value);
+
+      wrap.appendChild(row); wrap.appendChild(nIn);
+      setsArea.appendChild(wrap);
+    }
+
+    const addSet = document.createElement("button"); addSet.className = "add-set-btn";
+    addSet.textContent = "+ set";
+    addSet.onclick = () => {
+      const c = getSetCount(client.id, ex);
+      setSet(client.id, ex, c, "weight", "");
+      renderSets();
+    };
+    setsArea.appendChild(addSet);
+  }
+
+  renderSets();
+  block.appendChild(setsArea);
+  return block;
+}
+
+// ── Boot ──
+loadState();
+render();
+</script>
+</body>
+</html>
